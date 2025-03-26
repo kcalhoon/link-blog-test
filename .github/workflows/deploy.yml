@@ -13,7 +13,7 @@ jobs:
       - name: Build the site
         run: |
           mkdir -p _site
-          echo '<h1>My Link Blog</h1>' > _site/index.html
+          echo '<h1>My Link Blog - second attempt</h1>' > _site/index.html
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
   deploy:

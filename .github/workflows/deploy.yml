@@ -1,3 +1,5 @@
+# Search working correctly in this version
+
 name: Publish site
 on:
   push:

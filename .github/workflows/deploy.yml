@@ -67,7 +67,7 @@ jobs:
           </div>"' links.json >> _site/index.html
           
           # Close the HTML
-          cat >> _site/index.html << 'EOL'
+          cat >> _site/index.html << EOL
             </div>
             <footer>
               <p>Last updated: $(date)</p>

@@ -15,7 +15,7 @@ jobs:
         run: |
           mkdir -p _site
           
-          # Create header with search functionality
+          # Create header
           cat > _site/index.html << 'EOL'
           <!DOCTYPE html>
           <html>
@@ -61,9 +61,6 @@ jobs:
                 border: 1px solid #ddd;
                 border-radius: 4px;
               }
-              .hidden {
-                display: none !important;
-              }
               .search-status {
                 margin-top: 10px;
                 font-style: italic;
@@ -82,8 +79,85 @@ jobs:
             <div id="links-container">
           EOL
           
-          # Process links.json
-          jq -r '.[] | "<div class=\"link-item\">
-            <h2><a href=\"\(.url)\">\(.title)</a></h2>
-            <p class=\"description\">\(.description)</p>
-            <p c
+          # Check if links.json exists
+          if [ -f links.json ]; then
+            # Verify JSON format
+            cat links.json
+            
+            # Process links.json with more verbose error handling
+            jq -r '.[] | "<div class=\"link-item\"><h2><a href=\"\(.url)\">\(.title)</a></h2><p class=\"description\">\(.description)</p><p class=\"meta\">Posted on \(.date)</p><p class=\"tags\">Tags: \(.tags | join(\", \"))</p></div>"' links.json >> _site/index.html || echo "Error processing JSON" >&2
+          else
+            echo "Warning: links.json not found" >&2
+            echo "<p>No links available.</p>" >> _site/index.html
+          fi
+          
+          # Close the HTML with improved search script
+          cat >> _site/index.html << EOL
+            </div>
+            <footer>
+              <p>Last updated: $(date)</p>
+            </footer>
+            
+            <script>
+              document.addEventListener('DOMContentLoaded', function() {
+                const searchInput = document.getElementById('search-input');
+                const searchStatus = document.getElementById('search-status');
+                const linkItems = document.querySelectorAll('.link-item');
+                
+                searchInput.addEventListener('input', function() {
+                  const searchTerm = searchInput.value.toLowerCase().trim();
+                  let matchCount = 0;
+                  
+                  if (searchTerm === '') {
+                    linkItems.forEach(item => {
+                      item.style.display = '';
+                    });
+                    searchStatus.textContent = '';
+                    return;
+                  }
+                  
+                  linkItems.forEach(item => {
+                    const itemText = item.textContent.toLowerCase();
+                    
+                    if (itemText.includes(searchTerm)) {
+                      item.style.display = '';
+                      matchCount++;
+                    } else {
+                      item.style.display = 'none';
+                    }
+                  });
+                  
+                  if (matchCount === 0) {
+                    searchStatus.textContent = 'No matches found';
+                  } else if (matchCount === 1) {
+                    searchStatus.textContent = '1 match found';
+                  } else {
+                    searchStatus.textContent = matchCount + ' matches found';
+                  }
+                });
+                
+                document.addEventListener('keydown', function(e) {
+                  if (e.key === '/' && document.activeElement !== searchInput) {
+                    e.preventDefault();
+                    searchInput.focus();
+                  }
+                });
+              });
+            </script>
+          </body>
+          </html>
+          EOL
+          
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

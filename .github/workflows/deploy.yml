@@ -11,51 +11,171 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Debug files
-        run: |
-          echo "Current directory contents:"
-          ls -la
-          echo ""
-          
-          echo "Checking for links.json:"
-          if [ -f links.json ]; then
-            echo "links.json exists. Content:"
-            cat links.json
-          else
-            echo "links.json does not exist!"
-          fi
-      
       - name: Build the site
         run: |
           mkdir -p _site
           
-          # Create a simple page with debugging info
-          cat > _site/index.html << EOL
+          # Create header
+          cat > _site/index.html << 'EOL'
           <!DOCTYPE html>
           <html>
           <head>
             <meta charset="utf-8">
-            <title>My Link Blog - Debug</title>
+            <title>My Link Blog</title>
             <meta name="viewport" content="width=device-width, initial-scale=1">
             <style>
               body { 
                 max-width: 800px; 
                 margin: 0 auto; 
-                font-family: sans-serif; 
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
                 padding: 1em;
+                line-height: 1.5;
+              }
+              .link-item { 
+                margin-bottom: 2em; 
+                border-bottom: 1px solid #eee; 
+                padding-bottom: 1em; 
+              }
+              .meta, .tags { 
+                color: #666; 
+                font-size: 0.9em; 
+              }
+              a {
+                color: #0366d6;
+                text-decoration: none;
+              }
+              a:hover {
+                text-decoration: underline;
+              }
+              h1 {
+                border-bottom: 1px solid #eee;
+                padding-bottom: 0.5em;
+              }
+              #search-container {
+                margin: 1.5em 0;
+              }
+              #search-input {
+                width: 100%;
+                padding: 8px;
+                font-size: 16px;
+                border: 1px solid #ddd;
+                border-radius: 4px;
+              }
+              .search-status {
+                margin-top: 10px;
+                font-style: italic;
+                color: #666;
               }
             </style>
           </head>
           <body>
-            <h1>My Link Blog - Debug Info</h1>
+            <h1>My Link Blog</h1>
             
-            <h2>Repository Content:</h2>
-            <pre>$(ls -la)</pre>
+            <div id="search-container">
+              <input type="text" id="search-input" placeholder="Search links by title, description, or tags...">
+              <p id="search-status" class="search-status"></p>
+            </div>
             
-            <h2>links.json Content:</h2>
-            <pre>$(cat links.json 2>&1 || echo "File not found or cannot be read")</pre>
+            <div id="links-container">
+          EOL
+          
+          # Process links.json manually, avoiding jq complexity
+          # This is a simpler, more direct approach
+          echo '<script>
+            const linksData = 
+          ' >> _site/index.html
+          
+          # Insert the raw JSON content
+          cat links.json >> _site/index.html
+          
+          echo ';
+          
+            // Generate HTML for each link
+            const linksContainer = document.getElementById("links-container");
+            linksData.forEach(link => {
+              const linkElement = document.createElement("div");
+              linkElement.className = "link-item";
+              
+              const titleElement = document.createElement("h2");
+              const titleLink = document.createElement("a");
+              titleLink.href = link.url;
+              titleLink.textContent = link.title;
+              titleElement.appendChild(titleLink);
+              
+              const descElement = document.createElement("p");
+              descElement.className = "description";
+              descElement.textContent = link.description;
+              
+              const dateElement = document.createElement("p");
+              dateElement.className = "meta";
+              dateElement.textContent = "Posted on " + link.date;
+              
+              const tagsElement = document.createElement("p");
+              tagsElement.className = "tags";
+              tagsElement.textContent = "Tags: " + link.tags.join(", ");
+              
+              linkElement.appendChild(titleElement);
+              linkElement.appendChild(descElement);
+              linkElement.appendChild(dateElement);
+              linkElement.appendChild(tagsElement);
+              
+              linksContainer.appendChild(linkElement);
+            });
+          </script>' >> _site/index.html
+          
+          # Close the HTML with search script
+          cat >> _site/index.html << EOL
+            </div>
+            <footer>
+              <p>Last updated: $(date)</p>
+            </footer>
             
-            <p>Last updated: $(date)</p>
+            <script>
+              document.addEventListener('DOMContentLoaded', function() {
+                const searchInput = document.getElementById('search-input');
+                const searchStatus = document.getElementById('search-status');
+                const linkItems = document.querySelectorAll('.link-item');
+                
+                searchInput.addEventListener('input', function() {
+                  const searchTerm = searchInput.value.toLowerCase().trim();
+                  let matchCount = 0;
+                  
+                  if (searchTerm === '') {
+                    linkItems.forEach(item => {
+                      item.style.display = '';
+                    });
+                    searchStatus.textContent = '';
+                    return;
+                  }
+                  
+                  linkItems.forEach(item => {
+                    const itemText = item.textContent.toLowerCase();
+                    
+                    if (itemText.includes(searchTerm)) {
+                      item.style.display = '';
+                      matchCount++;
+                    } else {
+                      item.style.display = 'none';
+                    }
+                  });
+                  
+                  if (matchCount === 0) {
+                    searchStatus.textContent = 'No matches found';
+                  } else if (matchCount === 1) {
+                    searchStatus.textContent = '1 match found';
+                  } else {
+                    searchStatus.textContent = matchCount + ' matches found';
+                  }
+                });
+                
+                document.addEventListener('keydown', function(e) {
+                  if (e.key === '/' && document.activeElement !== searchInput) {
+                    e.preventDefault();
+                    searchInput.focus();
+                  }
+                });
+              });
+            </script>
           </body>
           </html>
           EOL

@@ -1,92 +1,93 @@
 document.addEventListener('DOMContentLoaded', function() {
   console.log('Custom snippet script loaded');
   
-  // Function to apply snippets
-  function applySnippets() {
-    console.log('Applying snippets');
+  // Wait a bit for the page to fully render
+  setTimeout(function() {
+    // Find all article containers
+    const articles = document.querySelectorAll('article, .post, main > div, body > div');
     
-    // Target all possible description elements
-    const selectors = [
-      'p:not([class])',
-      '.description',
-      'article p',
-      'div[class*="content"] p',
-      'div p'
-    ];
+    console.log(`Found ${articles.length} potential article containers`);
     
-    let foundElements = false;
-    
-    // Try each selector
-    for (const selector of selectors) {
-      const elements = document.querySelectorAll(selector);
-      console.log(`Found ${elements.length} elements with selector: ${selector}`);
+    // Process each article
+    articles.forEach(article => {
+      // Find all paragraphs in this article
+      const paragraphs = article.querySelectorAll('p:not(.meta):not(.processed)');
       
-      if (elements.length > 0) {
-        elements.forEach(element => {
-          // Skip if already processed
-          if (element.classList.contains('snippet-processed')) {
-            return;
-          }
-          
-          const text = element.textContent.trim();
-          
-          // Only process elements with substantial text
-          if (text.length > 150) {
-            console.log('Processing element with text:', text.substring(0, 30) + '...');
-            
-            // Mark as processed
-            element.classList.add('snippet-processed');
-            
-            // Create snippet
-            const snippet = text.substring(0, 150) + '...';
-            
-            // Create elements
-            const snippetElem = document.createElement('p');
-            snippetElem.className = 'snippet-text';
-            snippetElem.textContent = snippet;
-            
-            const fullTextElem = document.createElement('div');
-            fullTextElem.className = 'full-text';
-            fullTextElem.style.display = 'none';
-            fullTextElem.innerHTML = text.replace(/\n/g, '<br>');
-            
-            const button = document.createElement('button');
-            button.className = 'more-button';
-            button.textContent = 'Read More';
-            button.style.marginTop = '5px';
-            
-            // Replace original element with our new elements
-            const parent = element.parentNode;
-            parent.replaceChild(snippetElem, element);
-            parent.insertBefore(button, snippetElem.nextSibling);
-            parent.insertBefore(fullTextElem, button.nextSibling);
-            
-            // Add click handler
-            button.addEventListener('click', function() {
-              if (fullTextElem.style.display === 'none') {
-                snippetElem.style.display = 'none';
-                fullTextElem.style.display = 'block';
-                button.textContent = 'Show Less';
-              } else {
-                snippetElem.style.display = 'block';
-                fullTextElem.style.display = 'none';
-                button.textContent = 'Read More';
-              }
-            });
-            
-            foundElements = true;
-          }
-        });
+      // Skip if no paragraphs or already processed
+      if (paragraphs.length === 0 || article.classList.contains('snippet-processed')) {
+        return;
       }
       
-      if (foundElements) break;
-    }
-  }
-  
-  // Try immediately
-  applySnippets();
-  
-  // And also try after a delay to catch dynamically loaded content
-  setTimeout(applySnippets, 1000);
-  setTimeout(applySnippets, 2000);
+      // Mark as processed
+      article.classList.add('snippet-processed');
+      
+      // Remove any existing Read More buttons
+      const existingButtons = article.querySelectorAll('.more-button');
+      existingButtons.forEach(button => button.remove());
+      
+      // Find the first paragraph with substantial text (likely the content)
+      let contentParagraph = null;
+      for (const p of paragraphs) {
+        if (p.textContent.trim().length > 100) {
+          contentParagraph = p;
+          break;
+        }
+      }
+      
+      if (!contentParagraph) {
+        return; // No suitable paragraph found
+      }
+      
+      // Get the full text
+      const fullText = contentParagraph.textContent.trim();
+      
+      // Only process if text is long enough
+      if (fullText.length <= 150) {
+        return;
+      }
+      
+      console.log(`Processing article with text: ${fullText.substring(0, 30)}...`);
+      
+      // Create snippet
+      const snippet = fullText.substring(0, 150) + '...';
+      
+      // Store original text
+      contentParagraph.setAttribute('data-full-text', fullText);
+      
+      // Set to snippet
+      contentParagraph.textContent = snippet;
+      contentParagraph.classList.add('snippet-text');
+      
+      // Create Read More button
+      const button = document.createElement('button');
+      button.className = 'more-button';
+      button.textContent = 'Read More';
+      button.style.backgroundColor = '#4285f4';
+      button.style.color = 'white';
+      button.style.border = 'none';
+      button.style.borderRadius = '4px';
+      button.style.padding = '8px 16px';
+      button.style.margin = '10px 0';
+      button.style.cursor = 'pointer';
+      button.style.fontSize = '14px';
+      
+      // Insert button after paragraph
+      contentParagraph.parentNode.insertBefore(button, contentParagraph.nextSibling);
+      
+      // Add click handler
+      button.addEventListener('click', function() {
+        if (contentParagraph.classList.contains('expanded')) {
+          // Show snippet
+          contentParagraph.textContent = snippet;
+          contentParagraph.classList.remove('expanded');
+          button.textContent = 'Read More';
+        } else {
+          // Show full text
+          contentParagraph.textContent = contentParagraph.getAttribute('data-full-text');
+          contentParagraph.classList.add('expanded');
+          button.textContent = 'Show Less';
+        }
+      });
+    });
+  }, 500);
 }); 

@@ -1,66 +1,92 @@
 document.addEventListener('DOMContentLoaded', function() {
-  // Wait for the page to fully load
-  setTimeout(function() {
-    // Find all link descriptions (adjust selector based on your actual site structure)
-    const descriptions = document.querySelectorAll('p:not([class]):not(.meta):not(.description)');
+  console.log('Custom snippet script loaded');
+  
+  // Function to apply snippets
+  function applySnippets() {
+    console.log('Applying snippets');
     
-    descriptions.forEach(desc => {
-      // Skip if this element has already been processed or is not a description
-      if (desc.classList.contains('processed') || 
-          desc.parentNode.querySelector('.more-button')) {
-        return;
-      }
+    // Target all possible description elements
+    const selectors = [
+      'p:not([class])',
+      '.description',
+      'article p',
+      'div[class*="content"] p',
+      'div p'
+    ];
+    
+    let foundElements = false;
+    
+    // Try each selector
+    for (const selector of selectors) {
+      const elements = document.querySelectorAll(selector);
+      console.log(`Found ${elements.length} elements with selector: ${selector}`);
       
-      // Mark as processed
-      desc.classList.add('processed');
-      
-      // Get the original text
-      const originalText = desc.textContent;
-      
-      // If text is longer than 150 characters
-      if (originalText.length > 150) {
-        // Create snippet
-        const snippet = originalText.substring(0, 150) + '...';
-        
-        // Create full text element (hidden initially)
-        const fullTextElem = document.createElement('div');
-        fullTextElem.className = 'full-text';
-        fullTextElem.style.display = 'none';
-        fullTextElem.innerHTML = originalText.replace(/\n/g, '<br>');
-        
-        // Create read more button
-        const moreButton = document.createElement('button');
-        moreButton.className = 'more-button';
-        moreButton.textContent = 'Read More';
-        moreButton.style.marginLeft = '5px';
-        moreButton.style.padding = '4px 10px';
-        moreButton.style.backgroundColor = '#4285f4';
-        moreButton.style.color = 'white';
-        moreButton.style.border = 'none';
-        moreButton.style.borderRadius = '4px';
-        moreButton.style.cursor = 'pointer';
-        moreButton.style.fontSize = '14px';
-        
-        // Set the snippet text
-        desc.textContent = snippet;
-        
-        // Add button and full text after the description
-        desc.parentNode.insertBefore(moreButton, desc.nextSibling);
-        desc.parentNode.insertBefore(fullTextElem, moreButton.nextSibling);
-        
-        // Add click event to toggle between snippet and full text
-        moreButton.addEventListener('click', function() {
-          if (fullTextElem.style.display === 'none') {
-            fullTextElem.style.display = 'block';
-            desc.style.display = 'none';
-            moreButton.textContent = 'Show Less';
-          } else {
+      if (elements.length > 0) {
+        elements.forEach(element => {
+          // Skip if already processed
+          if (element.classList.contains('snippet-processed')) {
+            return;
+          }
+          
+          const text = element.textContent.trim();
+          
+          // Only process elements with substantial text
+          if (text.length > 150) {
+            console.log('Processing element with text:', text.substring(0, 30) + '...');
+            
+            // Mark as processed
+            element.classList.add('snippet-processed');
+            
+            // Create snippet
+            const snippet = text.substring(0, 150) + '...';
+            
+            // Create elements
+            const snippetElem = document.createElement('p');
+            snippetElem.className = 'snippet-text';
+            snippetElem.textContent = snippet;
+            
+            const fullTextElem = document.createElement('div');
+            fullTextElem.className = 'full-text';
             fullTextElem.style.display = 'none';
-            desc.style.display = 'block';
-            moreButton.textContent = 'Read More';
+            fullTextElem.innerHTML = text.replace(/\n/g, '<br>');
+            
+            const button = document.createElement('button');
+            button.className = 'more-button';
+            button.textContent = 'Read More';
+            button.style.marginTop = '5px';
+            
+            // Replace original element with our new elements
+            const parent = element.parentNode;
+            parent.replaceChild(snippetElem, element);
+            parent.insertBefore(button, snippetElem.nextSibling);
+            parent.insertBefore(fullTextElem, button.nextSibling);
+            
+            // Add click handler
+            button.addEventListener('click', function() {
+              if (fullTextElem.style.display === 'none') {
+                snippetElem.style.display = 'none';
+                fullTextElem.style.display = 'block';
+                button.textContent = 'Show Less';
+              } else {
+                snippetElem.style.display = 'block';
+                fullTextElem.style.display = 'none';
+                button.textContent = 'Read More';
+              }
+            });
+            
+            foundElements = true;
           }
         });
       }
-    });
-  }, 1000); // Wait 1 second for dynamic content to load
+      
+      if (foundElements) break;
+    }
+  }
+  
+  // Try immediately
+  applySnippets();
+  
+  // And also try after a delay to catch dynamically loaded content
+  setTimeout(applySnippets, 1000);
+  setTimeout(applySnippets, 2000);
 }); 

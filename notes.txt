@@ -1,0 +1,31 @@
+MVP
+- Simple graphic, logo
+- tags
+- search
+- autogen json, manually edit
+- set up google tracking
+- upload full text if can truncate
+
+Step 2
+- images
+
+Step 3
+- TIL section
+- faceted search
+
+Step 4
+- More formal db. See Simon W.
+
+
+Features
+
+ - Auto load of final posts
+   - 
+ - Faceted search
+ - Truncated and then more button.
+
+
+
+
+
+
